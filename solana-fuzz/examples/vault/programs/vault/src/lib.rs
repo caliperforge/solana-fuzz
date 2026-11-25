@@ -24,11 +24,8 @@ pub mod vault {
 
     pub fn withdraw(ctx: Context<Update>, amount: u64) -> Result<()> {
         let vault = &mut ctx.accounts.vault;
-        // PLANTED BUG: no `require!(amount <= vault.balance)` and a wrapping
-        // subtraction. A withdraw larger than the balance wraps to a huge u64
-        // instead of failing, so the balance INCREASES on a withdraw. The
-        // correct version (require! + checked_sub) is shown in the README.
-        vault.balance = vault.balance.wrapping_sub(amount);
+        require!(amount <= vault.balance, VaultError::InsufficientFunds);
+        vault.balance = vault.balance.checked_sub(amount).ok_or(VaultError::InsufficientFunds)?;
         Ok(())
     }
 }
